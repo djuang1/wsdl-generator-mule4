@@ -1,5 +1,6 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<mule xmlns="http://www.mulesoft.org/schema/mule/core" xmlns:apikit="http://www.mulesoft.org/schema/mule/mule-apikit" xmlns:doc="http://www.mulesoft.org/schema/mule/documentation" xmlns:ee="http://www.mulesoft.org/schema/mule/ee/core" xmlns:file="http://www.mulesoft.org/schema/mule/file" xmlns:http="http://www.mulesoft.org/schema/mule/http" xmlns:java="http://www.mulesoft.org/schema/mule/java" xmlns:tls="http://www.mulesoft.org/schema/mule/tls" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://www.mulesoft.org/schema/mule/core http://www.mulesoft.org/schema/mule/core/current/mule.xsd http://www.mulesoft.org/schema/mule/http http://www.mulesoft.org/schema/mule/http/current/mule-http.xsd http://www.mulesoft.org/schema/mule/mule-apikit http://www.mulesoft.org/schema/mule/mule-apikit/current/mule-apikit.xsd http://www.mulesoft.org/schema/mule/ee/core http://www.mulesoft.org/schema/mule/ee/core/current/mule-ee.xsd  http://www.mulesoft.org/schema/mule/java http://www.mulesoft.org/schema/mule/java/current/mule-java.xsd http://www.mulesoft.org/schema/mule/file http://www.mulesoft.org/schema/mule/file/current/mule-file.xsd http://www.mulesoft.org/schema/mule/tls http://www.mulesoft.org/schema/mule/tls/current/mule-tls.xsd">
+<mule xmlns:compression="http://www.mulesoft.org/schema/mule/compression" xmlns="http://www.mulesoft.org/schema/mule/core" xmlns:apikit="http://www.mulesoft.org/schema/mule/mule-apikit" xmlns:doc="http://www.mulesoft.org/schema/mule/documentation" xmlns:ee="http://www.mulesoft.org/schema/mule/ee/core" xmlns:file="http://www.mulesoft.org/schema/mule/file" xmlns:http="http://www.mulesoft.org/schema/mule/http" xmlns:java="http://www.mulesoft.org/schema/mule/java" xmlns:tls="http://www.mulesoft.org/schema/mule/tls" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://www.mulesoft.org/schema/mule/core http://www.mulesoft.org/schema/mule/core/current/mule.xsd http://www.mulesoft.org/schema/mule/http http://www.mulesoft.org/schema/mule/http/current/mule-http.xsd http://www.mulesoft.org/schema/mule/mule-apikit http://www.mulesoft.org/schema/mule/mule-apikit/current/mule-apikit.xsd http://www.mulesoft.org/schema/mule/ee/core http://www.mulesoft.org/schema/mule/ee/core/current/mule-ee.xsd  http://www.mulesoft.org/schema/mule/java http://www.mulesoft.org/schema/mule/java/current/mule-java.xsd http://www.mulesoft.org/schema/mule/file http://www.mulesoft.org/schema/mule/file/current/mule-file.xsd http://www.mulesoft.org/schema/mule/tls http://www.mulesoft.org/schema/mule/tls/current/mule-tls.xsd
+http://www.mulesoft.org/schema/mule/compression http://www.mulesoft.org/schema/mule/compression/current/mule-compression.xsd">
     <apikit:config name="api-config" api="api.raml" outboundHeadersMapName="outboundHeaders" httpStatusVarName="httpStatus" />
     <http:listener-config name="HTTPS_Listener_config" doc:name="HTTP Listener config" doc:id="700c025c-a164-498c-b7e0-2c04fa8152a4">
         <http:listener-connection protocol="HTTPS" host="0.0.0.0" port="8082">
@@ -130,10 +131,52 @@ output application/json
     </flow>
     <flow name="post:\generate:multipart\form-data:api-config">
         <logger level="INFO" message="post:\generate:multipart\form-data:api-config" />
-		<file:write doc:name="Write" doc:id="11b76518-9a8d-49a5-84a3-20ca186d659e" config-ref="File_Config" path="#[p('app.home') ++ &quot;/file.yaml&quot;]">
+		<choice doc:name="Choice" doc:id="9b710486-27aa-4340-91f2-f73188759e02" >
+			<when expression="#[payload.parts.&quot;inputFile&quot;.headers.&quot;Content-Type&quot; == 'text/yaml']">
+				<file:write doc:name="Write" doc:id="11b76518-9a8d-49a5-84a3-20ca186d659e" config-ref="File_Config" path="#[p('app.home') ++ &quot;/file.yaml&quot;]">
             <file:content><![CDATA[#[payload.parts.inputFile.content]]]></file:content>
         </file:write>
-        <java:invoke-static doc:name="Invoke static" doc:id="bdeb2201-2ff3-4b8e-8f95-facc0d3ee685" class="com.dejim.WSDLGeneratorWrapper" method="generateWSDL(java.lang.String,java.lang.String,java.lang.String)">
+			</when>
+			<otherwise >
+				<set-variable value='#[import * from dw::core::Strings&#10;output application/java&#10;---&#10;substringBefore(payload.parts."inputFile".headers."Content-Disposition".filename,".") ++ ".raml"]' doc:name="Set Variable" doc:id="223a7554-9781-4f6a-89f5-5a97b18dd595" variableName="fileName"/>
+				<compression:extract doc:name="Extract" doc:id="247d88d2-9419-47b9-8741-6aabfefe333a" >
+					<compression:compressed ><![CDATA[#[payload.parts.'inputFile'.content]]]></compression:compressed>
+					<compression:extractor >
+						<compression:zip-extractor />
+					</compression:extractor>
+				</compression:extract>
+				<foreach doc:name="For Each" doc:id="9eda83ec-c5ef-458c-b007-27c8c5ed0412" collection="#[output application/java --- dw::Core::entriesOf(payload)]">
+					<choice doc:name="Choice" doc:id="6934a078-c522-4af3-a9fd-24d833b53295" >
+						<when expression="#[sizeOf(payload[1]) &gt; 0]">
+							<file:write doc:name="Write" config-ref="File_Config" path="#[p('app.home') ++ &quot;/output/&quot; ++ payload[0]]">
+	    				<file:content><![CDATA[#[output application/java 
+---
+payload[1]]]]></file:content>
+	  				</file:write>
+						</when>
+						<otherwise >
+							<logger level="INFO" doc:name="Logger" doc:id="236ffe06-b1c1-4305-8360-867f25e306d9" message='#["Directory: " ++ payload[0]]'/>
+						</otherwise>
+					</choice>
+				</foreach>
+				<java:invoke-static doc:name="Generate OAS File" doc:id="2d631600-4382-48cd-81b1-6dca5ec67fe3" class="com.dejim.RAMLUtilities" method="generateOAS(java.lang.String,java.lang.String)">
+								<java:args><![CDATA[#[output application/java
+---
+{
+	arg0: p('app.home') ++ "/output/" ++ vars.fileName,
+	arg1: p('app.home') ++ "/file.yaml"
+}]]]></java:args>
+							</java:invoke-static>
+			</otherwise>
+		</choice>
+		<java:invoke-static doc:name="Delete Uncompressed RAML" doc:id="6a735cd7-09a9-467e-8c85-2c8d38506eb3" class="com.dejim.RAMLUtilities" method="deleteRAMLFolder(java.lang.String)">
+			<java:args ><![CDATA[#[output application/java
+---
+{
+	arg0: p('app.home') ++ "/output"
+}]]]></java:args>
+		</java:invoke-static>
+		<java:invoke-static doc:name="Generate WSDL from OAS" doc:id="bdeb2201-2ff3-4b8e-8f95-facc0d3ee685" class="com.dejim.WSDLGeneratorWrapper" method="generateWSDL(java.lang.String,java.lang.String,java.lang.String)">
             <java:args><![CDATA[#[output application/java
 ---
 {
@@ -142,7 +185,7 @@ output application/json
 	arg2: p('app.home')
 }]]]></java:args>
         </java:invoke-static>
-        <set-variable value='#[%dw 2.0&#10;import * from dw::core::Binaries &#10;output application/java &#10;--- &#10;(vars.outboundHeaders default {}) ++ {"Content-Disposition":"attachment; filename=service.wsdl", "Content-Type":"application/octet-stream"}]' doc:name="Set Variable" doc:id="8f550d10-e8ec-417e-839e-d45b9985f837" variableName="outboundHeaders" />
-        <file:read doc:name="Read" doc:id="1a9c6f8e-1eb6-4cd5-9827-c85cf13ccfb8" path="#[p('app.home') ++ &quot;/service.wsdl&quot;]" outputMimeType="application/octet-stream" />
+		<set-variable value='#[%dw 2.0&#10;import * from dw::core::Binaries &#10;output application/java &#10;--- &#10;(vars.outboundHeaders default {}) ++ {"Content-Disposition":"attachment; filename=service.wsdl", "Content-Type":"application/octet-stream"}]' doc:name="Set Variable" doc:id="8f550d10-e8ec-417e-839e-d45b9985f837" variableName="outboundHeaders" />
+		<file:read doc:name="Read" doc:id="1a9c6f8e-1eb6-4cd5-9827-c85cf13ccfb8" path="#[p('app.home') ++ &quot;/service.wsdl&quot;]" outputMimeType="application/octet-stream" />
     </flow>
 </mule>

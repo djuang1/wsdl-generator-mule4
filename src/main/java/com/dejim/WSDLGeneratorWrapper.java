@@ -13,8 +13,8 @@ public class WSDLGeneratorWrapper {
 		String line;
 		Process process;
 
-		String toolString = "java -jar " + appHome + "/openapi-generator-cli-6.2.1.jar generate -g wsdl-schema -i " + inputFileLocation + " -o " + outputFileLocation;
-		System.out.print(toolString + "\n");
+		String toolString = "java -jar " + appHome + "/openapi-generator-cli-6.2.1.jar generate -g wsdl-schema -i " + inputFileLocation + " -o " + outputFileLocation + " --skip-validate-spec";
+		//System.out.print(toolString + "\n");
 
 		try {
 
