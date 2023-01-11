@@ -148,14 +148,16 @@ output application/json
     </flow>
     <flow name="post:\raml\generate:multipart\form-data:api-config">
         <logger level="INFO" message="post:\raml\generate:multipart\form-data:api-config" />
-		<set-variable value="#[import * from dw::core::Strings&#xA;output application/java&#xA;---&#xA;substringBefore(payload.parts.&quot;inputFile&quot;.headers.&quot;Content-Disposition&quot;.filename,&quot;.&quot;) ++ &quot;.raml&quot;]" doc:name="Set Variable" doc:id="223a7554-9781-4f6a-89f5-5a97b18dd595" variableName="fileName" />
-		<compression:extract doc:name="Extract" doc:id="247d88d2-9419-47b9-8741-6aabfefe333a">
+		<choice doc:name="Choice" doc:id="131bf194-c67b-4db0-99c7-c34998067f32" >
+			<when expression="#[payload.parts.&quot;inputFile&quot;.headers.&quot;Content-Type&quot; == 'application/zip']">
+				<logger level="INFO" doc:name="Logger" doc:id="0472abd6-d7b5-4e58-88ba-1b72e24c88d3" />
+				<compression:extract doc:name="Extract" doc:id="247d88d2-9419-47b9-8741-6aabfefe333a">
                     <compression:compressed><![CDATA[#[payload.parts.'inputFile'.content]]]></compression:compressed>
                     <compression:extractor>
                         <compression:zip-extractor />
                     </compression:extractor>
                 </compression:extract>
-                <foreach doc:name="For Each" doc:id="6c769f0d-f1df-4761-a6e8-c8dadf9ed1b8" collection="#[output application/java --- dw::Core::entriesOf(payload)]">
+				<foreach doc:name="For Each" doc:id="6c769f0d-f1df-4761-a6e8-c8dadf9ed1b8" collection="#[output application/java --- dw::Core::entriesOf(payload)]">
                     <choice doc:name="Choice" doc:id="46149622-d49d-428f-8dba-e76b10095fb1">
                         <when expression="#[sizeOf(payload[1]) &gt; 0]">
                             <file:write doc:name="Write" config-ref="File_Config" path="#[p('app.home') ++ &quot;/output/&quot; ++ payload[0]]">
@@ -169,11 +171,25 @@ payload[1]]]]></file:content>
                         </otherwise>
                     </choice>
                 </foreach>
-                <java:invoke-static doc:name="Generate OAS File" doc:id="d7297d55-1b2b-4910-9624-6fcd5649a4e4" class="com.dejim.RAMLUtilities" method="generateOAS(java.lang.String,java.lang.String)">
+				<file:read doc:name="Read" doc:id="12d883cc-01da-4439-8ebb-9aa61e1f609f" path="#[p('app.home') ++ &quot;/output/exchange.json&quot;]" />
+				<set-variable value='#[output application/java&#10;---&#10;"/output/" ++ payload.main]' doc:name="Set Variable" doc:id="59d2ea5c-c194-479f-9339-9a4b4da8ce57" variableName="fileName" />
+			</when>
+			<when expression="#[payload.parts.&quot;inputFile&quot;.headers.&quot;Content-Type&quot; == 'application/raml+yaml']">
+				<logger level="INFO" doc:name="Logger" doc:id="79b2965f-50b7-40b8-a936-9c8c47980768" />
+				<file:write doc:name="Write" doc:id="675a5c60-2b39-449f-af29-d205cb098fa0" config-ref="File_Config" path="#[p('app.home') ++ &quot;/file.raml&quot;]">
+                    <file:content><![CDATA[#[payload.parts.inputFile.content]]]></file:content>
+                </file:write>
+				<set-variable value='#["/file.raml"]' doc:name="Set Variable" doc:id="537f5148-a554-46b4-8afd-48f2772310f8" variableName="fileName" />
+			</when>
+			<otherwise >
+				<logger level="INFO" doc:name="Logger" doc:id="92462ad2-7c19-4918-a212-e7ad67743c34" />
+			</otherwise>
+		</choice>
+		<java:invoke-static doc:name="Generate OAS File" doc:id="d7297d55-1b2b-4910-9624-6fcd5649a4e4" class="com.dejim.RAMLUtilities" method="generateOAS(java.lang.String,java.lang.String)">
                     <java:args><![CDATA[#[output application/java
 ---
 {
-	arg0: p('app.home') ++ "/output/" ++ vars.fileName,
+	arg0: p('app.home') ++ vars.fileName,
 	arg1: p('app.home') ++ "/file.yaml"
 }]]]></java:args>
                 </java:invoke-static>
