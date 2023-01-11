@@ -3,14 +3,25 @@ title: WSDL Generator
 description: API to generate WSDL
 baseUri: https://localhost:8082/api
 version: 1.0.0             
-            
-/generate:
-  displayName: Generate WSDL File
-  post:
-    body:
-      multipart/form-data:
-        properties:       
-          inputFile: 
-            displayName: Input file location
-            type: file
+   
+/raml:
+  /generate:     
+    displayName: Generate WSDL File from RAML zip
+    post:
+      body:
+        multipart/form-data:
+          properties:       
+            inputFile: 
+              displayName: Input file location
+              type: file    
+/oas:
+  /generate:
+    displayName: Generate WSDL File from OAS file
+    post:
+      body:
+        multipart/form-data:
+          properties:       
+            inputFile: 
+              displayName: Input file location
+              type: file
 

@@ -32,7 +32,7 @@ public class RAMLUtilities {
 		WebApiBaseUnit result = Raml10.parse(raml10).get();
 	
 		final String output = Oas30.generateString(result).get();
-	    System.out.println("Generating Oas30 JSON string: " + output);
+	    //System.out.println("Generating Oas30 JSON string: " + output);
 	}
 	
 	public static void deleteRAMLFolder(String ramlFolderLocation) throws IOException {
@@ -49,7 +49,7 @@ public class RAMLUtilities {
 		String raml10 = doInclude(inputFileLocation, basePath, "");
 		WebApiBaseUnit result = Raml10.parse(raml10).get();
 				
-		System.out.println(outputFileLocation);
+		//System.out.println(outputFileLocation);
 		String fpath = "file://" + outputFileLocation;
 		
 		Oas30.generateYamlFile(result, fpath).get();
