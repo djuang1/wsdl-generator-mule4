@@ -193,7 +193,8 @@ payload[1]]]]></file:content>
 	arg1: p('app.home') ++ "/file.yaml"
 }]]]></java:args>
                 </java:invoke-static>
-                <java:invoke-static doc:name="Delete Uncompressed RAML" doc:id="7a104dae-114c-48cc-808a-ff30c94395db" class="com.dejim.RAMLUtilities" method="deleteRAMLFolder(java.lang.String)">
+                <logger level="INFO" doc:name="Logger" doc:id="f9285c8c-fe5a-4d69-9f1f-90ef5f40bbed" message="#[payload]"/>
+		<java:invoke-static doc:name="Delete Uncompressed RAML" doc:id="7a104dae-114c-48cc-808a-ff30c94395db" class="com.dejim.RAMLUtilities" method="deleteRAMLFolder(java.lang.String)">
                     <java:args><![CDATA[#[output application/java
 ---
 {

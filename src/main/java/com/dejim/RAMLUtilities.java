@@ -13,6 +13,7 @@ import org.apache.commons.io.FileUtils;
 import webapi.Raml10;
 import webapi.WebApiBaseUnit;
 import webapi.Oas30;
+import webapi.Oas20;
 
 public class RAMLUtilities {
 
@@ -22,8 +23,8 @@ public class RAMLUtilities {
 
 	public static void main(String[] args) throws IOException, InterruptedException, ExecutionException {
 		
-		String file = args[0];
-		//String file = "/Users/djuang/Desktop/prism-process-api/prism-process-api.raml";
+		//String file = args[0];
+		String file = "/Users/djuang/Desktop/prism-process-api/prism-process-api.raml";
 		String basePath = new File(file).getParent();
 		
 		String raml10 = doInclude(file, basePath, "");
@@ -31,8 +32,9 @@ public class RAMLUtilities {
 		
 		WebApiBaseUnit result = Raml10.parse(raml10).get();
 	
-		final String output = Oas30.generateString(result).get();
-	    //System.out.println("Generating Oas30 JSON string: " + output);
+		final String output = Oas20.generateString(result).get();
+	    
+		//System.out.println(output);
 	}
 	
 	public static void deleteRAMLFolder(String ramlFolderLocation) throws IOException {
@@ -48,6 +50,8 @@ public class RAMLUtilities {
 		String basePath = new File(inputFileLocation).getParent();
 		String raml10 = doInclude(inputFileLocation, basePath, "");
 		WebApiBaseUnit result = Raml10.parse(raml10).get();
+		
+		//System.out.println(raml10);
 				
 		//System.out.println(outputFileLocation);
 		String fpath = "file://" + outputFileLocation;
